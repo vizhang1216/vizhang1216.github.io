@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>山水图窗 - 艺术与设计思维专题5</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --bg-cream: #f5f0e8;
+    --bg-warm: #faf7f2;
+    --text-dark: #2c2c2c;
+    --text-medium: #5a5a5a;
+    --text-light: #8a8a8a;
+    --border-light: #e8e0d4;
+    --accent: #8b7355;
+    --accent-light: #c4b89a;
+    --shadow: rgba(0,0,0,0.08);
+    --home-bg-url: url('01.png');
+  }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg-warm);
+    color: var(--text-dark);
+    overflow-x: hidden;
+  }
+
+  .page { display: none; min-height: 100vh; animation: fadeIn 0.5s ease; }
+  .page.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ========== HOME PAGE ========== */
+  #homePage { position: relative; height: 100vh; overflow: hidden; cursor: default; }
+  .home-bg { position: absolute; inset: 0; background: var(--home-bg-url) center/cover no-repeat; }
+  .home-bg::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(245,240,232,0.95) 0%, rgba(245,240,232,0.70) 30%, rgba(245,240,232,0.40) 55%, rgba(245,240,232,0.10) 80%, transparent 100%);
+  }
+  .home-content { position: relative; z-index: 2; height: 100vh; display: flex; align-items: center; padding: 0 8vw; }
+  .vertical-text-group { display: flex; flex-direction: row-reverse; align-items: stretch; justify-content: flex-end; height: 70vh; }
+  .vertical-text-group .main-title {
+    writing-mode: vertical-rl; font-family: 'Noto Serif SC', serif; font-size: clamp(3rem, 6vw, 5.5rem); font-weight: 700;
+    letter-spacing: 0.3em; color: var(--text-dark); line-height: 1.2; text-align: center; padding: 0 0.5em;
+    border-right: 2px solid var(--accent); margin-right: 2rem; position: relative;
+  }
+  .vertical-text-group .main-title::before, .vertical-text-group .main-title::after {
+    content: ''; position: absolute; right: -1px; width: 2px; height: 2rem; background: var(--accent);
+  }
+  .vertical-text-group .main-title::before { top: -2rem; }
+  .vertical-text-group .main-title::after { bottom: -2rem; }
+  .vertical-text-group .subtitle {
+    writing-mode: vertical-rl; font-family: 'Noto Serif SC', serif; font-size: clamp(0.85rem, 1.4vw, 1.1rem); font-weight: 400;
+    letter-spacing: 0.25em; color: var(--text-medium); line-height: 2; text-align: center; padding: 0 0.8em; display: flex; align-items: center;
+  }
+  .home-edit-hint { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: var(--text-light); letter-spacing: 0.1em; opacity: 0.6; transition: opacity 0.3s; z-index: 3; }
+  #homePage:hover .home-edit-hint { opacity: 1; }
+  .home-enter-btn { position: absolute; bottom: 4rem; right: 6vw; z-index: 3; background: none; border: 1px solid var(--accent); color: var(--accent); padding: 0.8rem 2rem; font-family: 'Noto Serif SC', serif; font-size: 0.9rem; letter-spacing: 0.2em; cursor: pointer; transition: all 0.3s; }
+  .home-enter-btn:hover { background: var(--accent); color: #fff; }
+
+  /* ========== OVERVIEW PAGE ========== */
+  #overviewPage { display: none; flex-direction: column; min-height: 100vh; }
+  #overviewPage.active { display: flex; }
+  .overview-header { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 2rem; border-bottom: 1px solid var(--border-light); background: #fff; position: sticky; top: 0; z-index: 100; }
+  .overview-header .logo { font-family: 'Noto Serif SC', serif; font-size: 1.4rem; font-weight: 600; color: var(--text-dark); cursor: pointer; letter-spacing: 0.15em; }
+  .overview-header .logo:hover { color: var(--accent); }
+  .header-nav { display: flex; gap: 2rem; align-items: center; }
+  .header-nav a { text-decoration: none; color: var(--text-light); font-size: 0.85rem; letter-spacing: 0.1em; transition: color 0.3s; cursor: pointer; }
+  .header-nav a:hover { color: var(--text-dark); }
+  .search-bar { display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border-light); border-radius: 24px; padding: 0.4rem 1rem; background: var(--bg-warm); transition: border-color 0.3s; }
+  .search-bar:focus-within { border-color: var(--accent); }
+  .search-bar input { border: none; background: transparent; outline: none; font-size: 0.85rem; color: var(--text-dark); width: 200px; font-family: 'Noto Sans SC', sans-serif; }
+  .search-bar input::placeholder { color: var(--text-light); }
+  .search-bar svg { width: 16px; height: 16px; color: var(--text-light); flex-shrink: 0; }
+  .overview-body { display: flex; flex: 1; }
+  .sidebar { width: 260px; min-width: 260px; background: #fff; border-right: 1px solid var(--border-light); padding: 1.5rem 0; overflow-y: auto; height: calc(100vh - 60px); position: sticky; top: 60px; }
+  .sidebar-section { margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 1.2rem; }
+  .sidebar-section:last-child { border-bottom: none; }
+  .sidebar-section h3 { font-family: 'Noto Serif SC', serif; font-size: 0.85rem; font-weight: 600; color: var(--text-dark); margin-bottom: 0.8rem; padding: 0 1.2rem; letter-spacing: 0.1em; }
+  .sidebar-section .content { padding: 0 1.2rem; }
+  .sidebar-link { display: block; padding: 0.5rem 0.8rem; color: var(--text-medium); text-decoration: none; font-size: 0.8rem; border-radius: 6px; transition: all 0.2s; cursor: pointer; letter-spacing: 0.05em; }
+  .sidebar-link:hover { background: var(--bg-warm); color: var(--accent); }
+  .sidebar-input { width: 100%; border: 1px solid var(--border-light); border-radius: 6px; padding: 0.5rem 0.7rem; font-size: 0.8rem; color: var(--text-dark); font-family: 'Noto Sans SC', sans-serif; transition: border-color 0.3s; background: var(--bg-warm); }
+  .sidebar-input:focus { outline: none; border-color: var(--accent); }
+  .window-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .window-type-btn { padding: 0.6rem 0.4rem; border: 1px solid var(--border-light); border-radius: 8px; background: #fff; font-size: 0.72rem; color: var(--text-medium); cursor: pointer; text-align: center; transition: all 0.2s; font-family: 'Noto Sans SC', sans-serif; }
+  .window-type-btn:hover, .window-type-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .student-list { max-height: 200px; overflow-y: auto; }
+  .student-item { padding: 0.4rem 0.8rem; font-size: 0.78rem; color: var(--text-medium); cursor: pointer; border-radius: 4px; transition: all 0.2s; }
+  .student-item:hover, .student-item.active { background: var(--bg-warm); color: var(--accent); }
+  .main-content { flex: 1; padding: 1.5rem 2rem; overflow-y: auto; }
+  .main-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .main-toolbar .result-count { font-size: 0.85rem; color: var(--text-light); }
+  .masonry-grid { columns: 3; column-gap: 1.2rem; }
+  .masonry-item { break-inside: avoid; margin-bottom: 1.2rem; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px var(--shadow); transition: all 0.3s; cursor: pointer; border: 1px solid var(--border-light); }
+  .masonry-item:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+  .item-image-wrapper { width: 100%; position: relative; background: var(--bg-cream); display: flex; align-items: center; justify-content: center; }
+  .item-image { width: 100%; height: auto; display: block; object-fit: contain; }
+  .item-overlay-btn { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; background: rgba(0,0,0,0.5); border: none; border-radius: 50%; color: #fff; font-size: 14px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; transition: background 0.2s; }
+  .masonry-item:hover .item-overlay-btn { display: flex; }
+  .item-overlay-btn:hover { background: rgba(200,50,50,0.8); }
+  .item-info { padding: 0.8rem 1rem; }
+  .item-name { font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--text-dark); margin-bottom: 0.2rem; outline: none; cursor: text; padding: 2px 0; border-bottom: 1px solid transparent; }
+  .item-name:focus { border-bottom-color: var(--accent); }
+  .item-type { font-size: 0.75rem; color: var(--text-light); letter-spacing: 0.05em; }
+  .upload-zone { border: 2px dashed var(--border-light); border-radius: 12px; padding: 2rem; text-align: center; color: var(--text-light); font-size: 0.85rem; transition: all 0.3s; cursor: pointer; background: #fff; margin-top: 1rem; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: rgba(139,115,85,0.05); }
+  .upload-zone svg { width: 32px; height: 32px; margin-bottom: 0.5rem; color: var(--accent-light); }
+
+  /* ========== COURSE & DETAIL PAGES ========== */
+  .detail-header { display: flex; align-items: center; gap: 1rem; padding: 1rem 2rem; border-bottom: 1px solid var(--border-light); background: #fff; position: sticky; top: 0; z-index: 100; }
+  .back-btn { display: flex; align-items: center; gap: 0.4rem; background: none; border: none; color: var(--text-medium); font-size: 0.85rem; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; padding: 0.4rem 0.8rem; border-radius: 6px; transition: all 0.2s; }
+  .back-btn:hover { background: var(--bg-warm); color: var(--text-dark); }
+  .detail-title { font-family: 'Noto Serif SC', serif; font-size: 1.1rem; font-weight: 600; color: var(--text-dark); letter-spacing: 0.1em; }
+  .detail-body, .course-detail-content { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  .course-detail-content { max-width: 900px; }
+  .detail-section, .course-section { margin-bottom: 3rem; padding: 1.5rem; background: #fff; border-radius: 12px; border: 1px solid var(--border-light); }
+  .detail-section h2, .course-section h2 { font-family: 'Noto Serif SC', serif; font-size: 1.2rem; font-weight: 600; color: var(--text-dark); margin-bottom: 1.2rem; letter-spacing: 0.1em; display: flex; align-items: center; gap: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--accent); color: #fff; border-radius: 50%; font-size: 0.8rem; font-weight: 700; }
+  .course-detail-content h1 { font-family: 'Noto Serif SC', serif; font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.5rem; text-align: center; letter-spacing: 0.15em; }
+  .course-instructor { text-align: center; font-size: 0.9rem; color: var(--text-light); margin-bottom: 2rem; letter-spacing: 0.05em; }
+  .course-section p { font-size: 0.9rem; line-height: 1.8; color: var(--text-medium); margin-bottom: 0.8rem; }
+  .upload-inline { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border: 1px dashed var(--border-light); border-radius: 8px; font-size: 0.8rem; color: var(--text-light); cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; }
+  .upload-inline:hover { border-color: var(--accent); color: var(--accent); }
+  .img-container { position: relative; width: 100%; background: var(--bg-cream); border-radius: 8px; border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 1rem; }
+  .img-container img { width: 100%; height: auto; max-height: 500px; object-fit: contain; display: block; }
+  .img-container .img-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.3s; }
+  .img-container:hover .img-actions { opacity: 1; }
+  .img-btn { width: 28px; height: 28px; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; color: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+  .img-btn:hover { background: var(--accent); }
+  .figure-window-layout { display: flex; gap: 2rem; align-items: flex-start; }
+  .figure-window-image { flex: 0 0 400px; max-width: 400px; }
+  .figure-window-text { flex: 1; }
+  .text-input-group { margin-bottom: 1.5rem; }
+  .text-input-group label { display: block; font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.4rem; letter-spacing: 0.05em; }
+  .text-input-group textarea, .text-input-group input, .text-input-group select { width: 100%; border: 1px solid var(--border-light); border-radius: 8px; padding: 0.8rem 1rem; font-size: 0.9rem; color: var(--text-dark); font-family: 'Noto Sans SC', sans-serif; transition: border-color 0.3s; background: #fff; }
+  .text-input-group textarea:focus, .text-input-group input:focus, .text-input-group select:focus { outline: none; border-color: var(--accent); }
+  .text-input-group textarea { min-height: 100px; resize: vertical; }
+  .text-input-group select { cursor: pointer; appearance: auto; }
+  .model-photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+  .model-photo-item { border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px var(--shadow); border: 1px solid var(--border-light); cursor: pointer; transition: all 0.3s; position: relative; background: var(--bg-cream); }
+  .model-photo-item:hover { transform: scale(1.03); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .model-photo-item img { width: 100%; height: 200px; object-fit: contain; display: block; }
+  .model-photo-item .photo-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; gap: 0.5rem; opacity: 0; transition: opacity 0.3s; }
+  .model-photo-item:hover .photo-overlay { opacity: 1; }
+  .model-photo-item .photo-overlay button { width: 32px; height: 32px; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .video-upload-zone { border: 2px dashed var(--border-light); border-radius: 12px; padding: 3rem; text-align: center; color: var(--text-light); transition: all 0.3s; cursor: pointer; background: #fff; }
+  .video-upload-zone:hover, .video-upload-zone.drag-over { border-color: var(--accent); background: rgba(139,115,85,0.05); }
+  .video-preview { margin-top: 1rem; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px var(--shadow); border: 1px solid var(--border-light); position: relative; }
+  .video-preview video { width: 100%; display: block; max-height: 400px; object-fit: contain; background: #000; }
+  .editable { outline: none; cursor: text; transition: background 0.3s; }
+  .editable:focus { background: rgba(139,115,85,0.08); border-radius: 4px; }
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; cursor: pointer; }
+  .lightbox.active { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; }
+  .lightbox .close-btn { position: absolute; top: 1.5rem; right: 1.5rem; width: 40px; height: 40px; background: rgba(255,255,255,0.15); border: none; border-radius: 50%; color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-light); }
+
+  @media (max-width: 1024px) {
+    .masonry-grid { columns: 2; }
+    .figure-window-layout { flex-direction: column; }
+    .figure-window-image { flex: none; max-width: 100%; }
+    .sidebar { width: 220px; min-width: 220px; }
+  }
+  @media (max-width: 768px) {
+    .masonry-grid { columns: 1; }
+    .sidebar { display: none; }
+    .vertical-text-group .main-title { font-size: 2.5rem; }
+    .home-content { padding: 0 4vw; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== HOME PAGE ==================== -->
+<div id="homePage" class="page active">
+  <div class="home-bg"></div>
+  <div class="home-content">
+    <div class="vertical-text-group">
+      <div class="main-title editable" contenteditable="true" id="homeMainTitle">山水图窗</div>
+      <div class="subtitle editable" contenteditable="true" id="homeSubtitle">艺术与设计思维专题5：中国传统山水的意象与空间</div>
+    </div>
+  </div>
+  <button class="home-enter-btn" onclick="navigateTo('overview')">进入作品集 →</button>
+  <div class="home-edit-hint">点击文字可编辑 · 点击任意处进入</div>
+</div>
+
+<!-- ==================== OVERVIEW PAGE ==================== -->
+<div id="overviewPage" class="page">
+  <div class="overview-header">
+    <div class="logo" onclick="navigateTo('home')">山水图窗</div>
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="搜索学生姓名、序号、诗句..." id="searchInput" oninput="filterWorks()">
+    </div>
+    <div class="header-nav">
+      <a onclick="navigateTo('course')">课程简介</a>
+      <a onclick="navigateTo('home')">首页</a>
+    </div>
+  </div>
+  <div class="overview-body">
+    <aside class="sidebar">
+      <div class="sidebar-section"><h3>课程简介</h3><div class="content"><a class="sidebar-link" onclick="navigateTo('course')">查看详情 →</a></div></div>
+      <div class="sidebar-section"><h3>学期时间</h3><div class="content"><input type="text" class="sidebar-input" value="2026年春季学期" id="semesterInput" onchange="localSave()"></div></div>
+      <div class="sidebar-section"><h3>学生姓名</h3><div class="content student-list" id="studentList"></div></div>
+      <div class="sidebar-section"><h3>窗型筛选</h3><div class="content"><div class="window-type-grid">
+        <button class="window-type-btn active" onclick="filterByType(this, 'all')">全部</button>
+        <button class="window-type-btn" onclick="filterByType(this, 'fan')">扇面</button>
+        <button class="window-type-btn" onclick="filterByType(this, 'circle')">圆形团扇</button>
+        <button class="window-type-btn" onclick="filterByType(this, 'horizontal')">横长册页</button>
+        <button class="window-type-btn" onclick="filterByType(this, 'vertical')">纵长立轴</button>
+      </div></div></div>
+    </aside>
+    <main class="main-content">
+      <div class="main-toolbar"><span class="result-count" id="resultCount">共 0 件作品</span></div>
+      <div class="masonry-grid" id="masonryGrid"></div>
+      <div class="upload-zone" id="uploadZone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>拖拽图片到此处上传新作品</p>
+        <p style="font-size:0.75rem;margin-top:0.3rem;">支持 JPG、PNG 格式</p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ==================== COURSE PAGE ==================== -->
+<div id="coursePage" class="page">
+  <div class="detail-header">
+    <button class="back-btn" onclick="navigateTo('overview')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      返回总览
+    </button>
+    <span class="detail-title">课程简介</span>
+  </div>
+  <div class="course-detail-content">
+    <h1>艺术与设计思维专题5：<br>中国传统山水的意象与空间</h1>
+    <div class="course-instructor">指导教师：邵星宇 &nbsp; 助教：张羽欣 李亚文</div>
+    
+    <div class="course-section" id="sectionRationale">
+      <h2>选题依据</h2>
+      <p>"裁纸数幅，以为画之头尾，及左右镶边，头尾贴于窗之上下，镶边贴于两边，俨然堂画一幅，但虚其中。非虚其中，欲以屋后之山代之也。坐而观之，则窗非窗也，画也。山非屋后之山，及画上之山也。" ——《闲情偶寄》</p>
+      <p>"若为分枝，若为点叶，若为峦头，若为水口，与夫坡石桥道，宫室舟车，琐细要法，无不毕具。" ——《芥子园画传》</p>
+      <div class="upload-inline" onclick="document.getElementById('courseRationaleUpload').click()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        上传参考图片
+      </div>
+      <input type="file" id="courseRationaleUpload" accept="image/*" multiple style="display:none" onchange="handleCourseImageUpload(this, 'sectionRationale')">
+      <div id="sectionRationaleImages"></div>
+    </div>
+
+    <div class="course-section">
+      <h2>课程目标</h2>
+      <p><strong>1. 知识方面：</strong>建立对于中国传统山水画的基本元素、构图原则，以及中国古典园林空间特征、组织方式的初步认识。在此基础上培养基本的空间阅读能力和审美能力。</p>
+      <p><strong>2. 操作方面：</strong>通过“设计工作室”式教学法，强调“从做中学”。在动手操作的过程中学习中国传统山水空间基本知识、培养空间美学素养。同时，通过“设计思维”将理论认知进行融合，转化为动手操作的方法，最终以设计实物展示学习成果。</p>
+      <p><strong>3. 技法方面：</strong>掌握基本的中国传统山水构图技巧，模型制作和摄影方法。通过模型以及模型照片表达设计概念，了解从“图像”到“空间”，从二维到三维的设计推进方式。</p>
+      <p><strong>4. 多专业融合：</strong>利用学生多专业背景，鼓励学生在空间美学学习和设计创作过程中寻找与自己专业的接口。通过这个课程，各专业学生可以了解他们可以在哪些方面对我们的生存环境的可持续性发展作出贡献。</p>
+      <p><strong>5. 课程思政方面：</strong>通过建立基本的对于中国传统山水空间的审美认识，增强学生对于中国传统山水文化的理解，提升中华文化自信。并通过课程不同阶段的练习，培养学生探索传承创新中国传统文化的主动性和责任感。</p>
+    </div>
+
+    <div class="course-section" id="sectionSteps">
+      <h2>课程步骤</h2>
+      <p><strong>第一步：山水画谱制作</strong><br>选择一个“图窗”类型（竖长方，横长方，圆形，扇形），作为画幅，应用《芥子园画传》中的山石、树、房等元素，根据诗句进行山水构图训练。</p>
+      <p><strong>第二步：山水图窗模型</strong><br>在山水构图基础上，将空间区分深度和层次。除了本身景物的构图，还需要思考“图窗”所在的位置——即同时考虑视点的高度、位置，以及考虑被看的景物特征。同时通过光影组织，完成模型摄影。模型尺寸：210mm×210mm×75mm，6到8层，可折叠。</p>
+      <p><strong>第三步：AI辅助山水布景的园林空间再现</strong><br>基于之前的山水图窗模型照片和瞻园素材，进一步想象窗内建筑和窗外之景，通过与AI的沟通，完成个人园林场景格局的构建，并制作5s左右的视频和一段300字左右个人园林的文字描述。</p>
+      <div class="upload-inline" onclick="document.getElementById('courseStepsUpload').click()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        上传步骤说明图片
+      </div>
+      <input type="file" id="courseStepsUpload" accept="image/*" multiple style="display:none" onchange="handleCourseImageUpload(this, 'sectionSteps')">
+      <div id="sectionStepsImages"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DETAIL PAGE ==================== -->
+<div id="detailPage" class="page">
+  <div class="detail-header">
+    <button class="back-btn" onclick="navigateTo('overview')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      返回总览
+    </button>
+    <span class="detail-title" id="detailStudentName">学生作品详情</span>
+  </div>
+  <div class="detail-body">
+    <div class="detail-section">
+      <h2><span class="section-num">1</span>图窗照片</h2>
+      <div class="figure-window-layout">
+        <div class="figure-window-image">
+          <div class="img-container" id="figureImgContainer">
+            <img src="" alt="图窗照片" id="figureWindowImg">
+            <div class="img-actions">
+              <button class="img-btn" onclick="document.getElementById('figureImgUpload').click()" title="更换图片">✎</button>
+              <button class="img-btn" onclick="deleteFigureImage()" title="删除图片">✕</button>
+            </div>
+          </div>
+          <input type="file" id="figureImgUpload" accept="image/*" style="display:none" onchange="changeFigureImage(this)">
+        </div>
+        <div class="figure-window-text">
+          <div class="text-input-group">
+            <label>窗型选择</label>
+            <select id="typeSelect" onchange="updateWorkType()">
+              <option value="horizontal">横长册页</option>
+              <option value="vertical">纵长立轴</option>
+              <option value="circle">圆形团扇</option>
+              <option value="fan">扇面</option>
+            </select>
+          </div>
+          <div class="text-input-group">
+            <label>意境诗句</label>
+            <textarea placeholder="请输入与此作品相关的意境诗句..." id="poemInput" onchange="autoSaveDetail()"></textarea>
+          </div>
+          <div class="text-input-group">
+            <label>设计理念</label>
+            <textarea placeholder="请输入设计理念与创作思路..." id="conceptInput" style="min-height:150px;" onchange="autoSaveDetail()"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h2><span class="section-num">2</span>模型照片</h2>
+      <div class="model-photos-grid" id="modelPhotosGrid"></div>
+      <div class="upload-zone" style="margin-top: 1rem;" onclick="document.getElementById('modelPhotoUpload').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>点击或拖拽上传模型照片</p>
+      </div>
+      <input type="file" id="modelPhotoUpload" accept="image/*" multiple style="display:none" onchange="handleModelUpload(this)">
+    </div>
+
+    <div class="detail-section">
+      <h2><span class="section-num">3</span>视频</h2>
+      <div class="video-upload-zone" id="videoUploadZone" onclick="document.getElementById('videoUpload').click()">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent-light);margin-bottom:0.8rem;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <p>拖拽视频文件到此处，或点击上传</p>
+        <p style="font-size:0.75rem;margin-top:0.3rem;color:var(--text-light);">支持 MP4、MOV 格式，建议 5s 左右</p>
+      </div>
+      <input type="file" id="videoUpload" accept="video/*" style="display:none" onchange="handleVideoUpload(this)">
+      <div class="video-preview" id="videoPreview" style="display:none;">
+        <video controls id="uploadedVideo"></video>
+        <div class="img-actions" style="opacity:1; top:10px; right:10px;">
+          <button class="img-btn" onclick="deleteVideo()" title="删除视频">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== LIGHTBOX ==================== -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="close-btn" onclick="closeLightbox()">✕</button>
+  <img src="" alt="大图预览" id="lightboxImg">
+</div>
+
+<script>
+  // ==================== Supabase 初始化 ====================
+  const supabaseUrl = 'https://rasoynnqtkjvqogemljr.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhc295bm5xdGtqdnFvZ2VtbGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MzkzMjgsImV4cCI6MjA5MjUxNTMyOH0.7TUIK5bbyVZzRPvsdIRY8CvgmiTF-vTWiu09PB8XAA0';
+  const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+  const STORAGE_BUCKET = 'vi-portfolio';
+
+  // 窗型映射
+  const typeMap = {
+    'horizontal': '横长册页',
+    'vertical': '纵长立轴',
+    'circle': '圆形团扇',
+    'fan': '扇面'
+  };
+
+  // ==================== 全局状态 ====================
+  let works = [];
+  let currentFilter = 'all';
+  let currentStudent = '';
+  let activeWork = null;
+
+  // ==================== 辅助函数 ====================
+  function generateFileName(prefix, ext) {
+    return prefix + '-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8) + '.' + ext;
+  }
+  function getFileExt(file) {
+    const name = file.name || '';
+    const parts = name.split('.');
+    return parts.length > 1 ? parts.pop().toLowerCase() : 'jpg';
+  }
+  function getPublicUrl(fileName) {
+    const { data } = supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
+    return data?.publicUrl || '';
+  }
+
+  // ==================== 数据加载 ====================
+  async function loadWorksFromSupabase() {
+    const { data, error } = await supabaseClient.from('works').select('*').order('id');
+    if (error) {
+      console.error('加载作品失败:', error);
+      alert('无法从服务器加载作品，请检查网络或配置。');
+      return;
+    }
+    works = data || [];
+    renderWorks();
+  }
+
+  // ==================== 渲染作品列表 ====================
+  function renderWorks() {
+    const grid = document.getElementById('masonryGrid');
+    grid.innerHTML = '';
+    let filtered = [...works];
+    const search = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+    if (currentFilter !== 'all') filtered = filtered.filter(w => w.type === currentFilter);
+    if (currentStudent) filtered = filtered.filter(w => w.name === currentStudent);
+    if (search) filtered = filtered.filter(w => w.name?.includes(search) || w.poem?.includes(search) || w.type_label?.includes(search));
+
+    filtered.forEach(work => {
+      const item = document.createElement('div');
+      item.className = 'masonry-item';
+      item.onclick = () => openWorkDetail(work);
+      item.innerHTML = `
+        <div class="item-image-wrapper">
+          <img class="item-image" src="${work.image_url || ''}" alt="${work.name || ''}">
+          <button class="item-overlay-btn" onclick="event.stopPropagation(); deleteWork(${work.id})" title="删除作品">✕</button>
+        </div>
+        <div class="item-info">
+          <div class="item-name" contenteditable="true" onclick="event.stopPropagation()" onblur="updateWorkName(${work.id}, this.innerText)">${work.name || '未命名'}</div>
+          <div class="item-type">${work.type_label || ''}</div>
+        </div>
+      `;
+      grid.appendChild(item);
+    });
+    document.getElementById('resultCount').textContent = `共 ${filtered.length} 件作品`;
+    updateStudentList();
+  }
+
+  function updateStudentList() {
+    const list = document.getElementById('studentList');
+    const names = [...new Set(works.map(w => w.name).filter(Boolean))];
+    list.innerHTML = names.map(n => `<div class="student-item ${currentStudent === n ? 'active' : ''}" onclick="filterByStudent('${n}')">${n}</div>`).join('');
+  }
+
+  // ==================== 导航 ====================
+  async function navigateTo(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId + 'Page').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (pageId === 'overview') loadWorksFromSupabase();
+    if (pageId === 'course') await renderCourseImages();
+  }
+
+  document.getElementById('homePage').addEventListener('click', (e) => {
+    if (e.target.closest('.home-enter-btn') || e.target.closest('.editable')) return;
+    navigateTo('overview');
+  });
+
+  // ==================== 筛选 ====================
+  function filterByType(btn, type) {
+    document.querySelectorAll('.window-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = type;
+    renderWorks();
+  }
+  function filterByStudent(name) {
+    currentStudent = currentStudent === name ? '' : name;
+    renderWorks();
+  }
+  function filterWorks() { renderWorks(); }
+
+  // ==================== 作品详情 ====================
+  function openWorkDetail(work) {
+    activeWork = work;
+    document.getElementById('detailStudentName').textContent = `${work.name} — ${work.type_label || ''}`;
+    document.getElementById('figureWindowImg').src = work.image_url || '';
+    document.getElementById('figureWindowImg').style.display = work.image_url ? 'block' : 'none';
+    
+    const typeSelect = document.getElementById('typeSelect');
+    if (typeSelect) {
+      typeSelect.value = work.type || 'horizontal';
+    }
+    
+    document.getElementById('poemInput').value = work.poem || '';
+    document.getElementById('conceptInput').value = work.concept || '';
+    renderModelPhotos(work);
+    
+    const vidZone = document.getElementById('videoUploadZone');
+    const vidPrev = document.getElementById('videoPreview');
+    const vidEl = document.getElementById('uploadedVideo');
+    if (work.video_url) {
+      vidPrev.style.display = 'block';
+      vidZone.style.display = 'none';
+      vidEl.src = work.video_url;
+    } else {
+      vidPrev.style.display = 'none';
+      vidZone.style.display = 'block';
+      vidEl.src = '';
+    }
+    navigateTo('detail');
+  }
+
+  async function updateWorkType() {
+    if (!activeWork) return;
+    const typeSelect = document.getElementById('typeSelect');
+    const newType = typeSelect.value;
+    const newTypeLabel = typeMap[newType];
+    
+    await supabaseClient.from('works').update({ 
+      type: newType, 
+      type_label: newTypeLabel 
+    }).eq('id', activeWork.id);
+    
+    activeWork.type = newType;
+    activeWork.type_label = newTypeLabel;
+    
+    const index = works.findIndex(w => w.id === activeWork.id);
+    if (index !== -1) {
+      works[index].type = newType;
+      works[index].type_label = newTypeLabel;
+    }
+    
+    document.getElementById('detailStudentName').textContent = `${activeWork.name} — ${newTypeLabel}`;
+  }
+
+  function renderModelPhotos(work) {
+    const grid = document.getElementById('modelPhotosGrid');
+    grid.innerHTML = '';
+    let photos = [];
+    try { photos = JSON.parse(work.model_photos || '[]'); } catch(e) { photos = []; }
+    photos.forEach((src, idx) => {
+      const item = document.createElement('div');
+      item.className = 'model-photo-item';
+      item.onclick = () => openLightbox(src);
+      item.innerHTML = `<img src="${src}" alt="模型照片"><div class="photo-overlay"><button onclick="event.stopPropagation(); openLightbox('${src}')">🔍</button><button onclick="event.stopPropagation(); deleteModelPhoto(${idx})">🗑</button></div>`;
+      grid.appendChild(item);
+    });
+  }
+
+  async function deleteModelPhoto(idx) {
+    if (!activeWork) return;
+    if (!confirm('删除此模型照片？')) return;
+    let photos = [];
+    try { photos = JSON.parse(activeWork.model_photos || '[]'); } catch(e) { photos = []; }
+    const removed = photos.splice(idx, 1)[0];
+    if (removed) {
+      const path = decodeURIComponent(removed.split('/').pop().split('?')[0]);
+      await supabaseClient.storage.from(STORAGE_BUCKET).remove([path]);
+    }
+    activeWork.model_photos = JSON.stringify(photos);
+    await supabaseClient.from('works').update({ model_photos: activeWork.model_photos }).eq('id', activeWork.id);
+    renderModelPhotos(activeWork);
+    const index = works.findIndex(w => w.id === activeWork.id);
+    if (index !== -1) works[index].model_photos = activeWork.model_photos;
+  }
+
+  async function autoSaveDetail() {
+    if (!activeWork) return;
+    const poem = document.getElementById('poemInput').value;
+    const concept = document.getElementById('conceptInput').value;
+    await supabaseClient.from('works').update({ poem, concept }).eq('id', activeWork.id);
+    activeWork.poem = poem;
+    activeWork.concept = concept;
+    const index = works.findIndex(w => w.id === activeWork.id);
+    if (index !== -1) {
+      works[index].poem = poem;
+      works[index].concept = concept;
+    }
+  }
+
+  // ==================== 作品删除 ====================
+  async function deleteWork(id) {
+    if (!confirm('确定删除该作品？此操作不可恢复。')) return;
+    const work = works.find(w => w.id === id);
+    if (!work) return;
+    const filesToDelete = [];
+    if (work.image_url) filesToDelete.push(new URL(work.image_url).pathname.split('/').pop().split('?')[0]);
+    if (work.video_url) filesToDelete.push(new URL(work.video_url).pathname.split('/').pop().split('?')[0]);
+    try {
+      const photos = JSON.parse(work.model_photos || '[]');
+      photos.forEach(src => filesToDelete.push(new URL(src).pathname.split('/').pop().split('?')[0]));
+    } catch(e) {}
+    if (filesToDelete.length > 0) {
+      await supabaseClient.storage.from(STORAGE_BUCKET).remove(filesToDelete);
+    }
+    await supabaseClient.from('works').delete().eq('id', id);
+    works = works.filter(w => w.id !== id);
+    renderWorks();
+  }
+
+  async function updateWorkName(id, newName) {
+    await supabaseClient.from('works').update({ name: newName }).eq('id', id);
+    const work = works.find(w => w.id === id);
+    if (work) work.name = newName;
+    renderWorks();
+  }
+
+  // ==================== 上传新作品 ====================
+  const uploadZone = document.getElementById('uploadZone');
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); handleNewUpload(e.dataTransfer.files); });
+  uploadZone.addEventListener('click', () => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+    inp.onchange = () => handleNewUpload(inp.files);
+    inp.click();
+  });
+
+  async function handleNewUpload(files) {
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+      const ext = getFileExt(file);
+      const fileName = generateFileName('work', ext);
+      const { error } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(fileName, file);
+      if (error) { alert('图片上传失败: ' + error.message); continue; }
+      const imageUrl = getPublicUrl(fileName);
+      const { data: newWork, error: insertError } = await supabaseClient.from('works').insert({
+        name: '新学生',
+        type: 'horizontal',
+        type_label: '横长册页',
+        image_url: imageUrl,
+        poem: '',
+        concept: '',
+        model_photos: '[]',
+        video_url: ''
+      }).select().single();
+      if (insertError) { alert('创建作品失败: ' + insertError.message); continue; }
+      works.push(newWork);
+    }
+    renderWorks();
+  }
+
+  // ==================== 详情页图片操作 ====================
+  async function deleteFigureImage() {
+    if (!activeWork) return;
+    if (!confirm('删除图窗照片？')) return;
+    if (activeWork.image_url) {
+      const path = new URL(activeWork.image_url).pathname.split('/').pop().split('?')[0];
+      await supabaseClient.storage.from(STORAGE_BUCKET).remove([path]);
+    }
+    await supabaseClient.from('works').update({ image_url: '' }).eq('id', activeWork.id);
+    activeWork.image_url = '';
+    document.getElementById('figureWindowImg').style.display = 'none';
+    const index = works.findIndex(w => w.id === activeWork.id);
+    if (index !== -1) works[index].image_url = '';
+    renderWorks();
+  }
+
+  async function changeFigureImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const ext = getFileExt(file);
+    const fileName = generateFileName('fig', ext);
+    const { error } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(fileName, file);
+    if (error) { alert('上传失败'); return; }
+    const imageUrl = getPublicUrl(fileName);
+    if (activeWork.image_url) {
+      const oldPath = new URL(activeWork.image_url).pathname.split('/').pop().split('?')[0];
+      await supabaseClient.storage.from(STORAGE_BUCKET).remove([oldPath]);
+    }
+    await supabaseClient.from('works').update({ image_url: imageUrl }).eq('id', activeWork.id);
+    activeWork.image_url = imageUrl;
+    document.getElementById('figureWindowImg').src = imageUrl;
+    document.getElementById('figureWindowImg').style.display = 'block';
+    const index = works.findIndex(w => w.id === activeWork.id);
+    if (index !== -1) works[index].image_url = imageUrl;
+    renderWorks();
+  }
+
+  // ==================== 模型照片上传 ====================
+  async function handleModelUpload(input) {
+    if (!activeWork) return;
+    const files = Array.from(input.files).filter(f => f.type.startsWith('image/'));
+    for (const file of files) {
+      const ext = getFileExt(file);
+      const fileName = generateFileName('model', ext);
+      const { error } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(fileName, file);
+      if (error) continue;
+      const url = getPublicUrl(fileName);
+      let photos = [];
+      try { photos = JSON.parse(activeWork.model_photos || '[]'); } catch(e) { photos = []; }
+      photos.push(url);
+      activeWork.model_photos = JSON.stringify(photos);
+    }
+    await supabaseClient.from('works').update({ model_photos: activeWork.model_photos }).eq('id', activeWork.id);
+    renderModelPhotos(activeWork);
+    const index = works.findIndex(w => w.id === activeWork.id);
+    if (index !== -1) works[index].model_photos = activeWork.model_photos;
+    input.value = '';
+  }
+
+  // ==================== 视频操作 ====================
+  const videoUploadZoneEl = document.getElementById('videoUploadZone');
+  videoUploadZoneEl.addEventListener('dragover', e => { e.preventDefault(); videoUploadZoneEl.classList.add('drag-over'); });
+  videoUploadZoneEl.addEventListener('dragleave', () => videoUploadZoneEl.classList.remove('drag-over'));
+  videoUploadZoneEl.addEventListener('drop', e => { e.preventDefault(); videoUploadZoneEl.classList.remove('drag-over'); handleVideoFiles(e.dataTransfer.files); });
+
+  async function handleVideoUpload(input) { await handleVideoFiles(input.files); input.value = ''; }
+  async function handleVideoFiles(files) {
+    const file = files[0];
+    if (!file || !file.type.startsWith('video/')) return;
+    const ext = getFileExt(file);
+    const fileName = generateFileName('video', ext);
+    const { error } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(fileName, file);
+    if (error) { alert('视频上传失败'); return; }
+    const videoUrl = getPublicUrl(fileName);
+    if (activeWork.video_url) {
+      const oldPath = new URL(activeWork.video_url).pathname.split('/').pop().split('?')[0];
+      await supabaseClient.storage.from(STORAGE_BUCKET).remove([oldPath]);
+    }
+    await supabaseClient.from('works').update({ video_url: videoUrl }).eq('id', activeWork.id);
+    activeWork.video_url = videoUrl;
+    document.getElementById('uploadedVideo').src = videoUrl;
+    document.getElementById('videoPreview').style.display = 'block';
+    videoUploadZoneEl.style.display = 'none';
+    const index = works.findIndex(w => w.id === activeWork.id);
+    if (index !== -1) works[index].video_url = videoUrl;
+  }
+
+  async function deleteVideo() {
+    if (!activeWork || !activeWork.video_url) return;
+    if (!confirm('删除视频？')) return;
+    const oldPath = new URL(activeWork.video_url).pathname.split('/').pop().split('?')[0];
+    await supabaseClient.storage.from(STORAGE_BUCKET).remove([oldPath]);
+    await supabaseClient.from('works').update({ video_url: '' }).eq('id', activeWork.id);
+    activeWork.video_url = '';
+    document.getElementById('videoPreview').style.display = 'none';
+    videoUploadZoneEl.style.display = 'block';
+    const index = works.findIndex(w => w.id === activeWork.id);
+    if (index !== -1) works[index].video_url = '';
+  }
+
+  // ==================== Lightbox ====================
+  function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  // ==================== 课程图片 (Supabase 数据库 + Storage) ====================
+  // 学期等非核心数据仍保留本地存储
+  const LOCAL_STORAGE_KEY = 'landscape_window_portfolio_v2';
+  function localLoad() {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : { semester: '2026年春季学期', homeTitle: '山水图窗', homeSubtitle: '艺术与设计思维专题5：中国传统山水的意象与空间' };
+    } catch(e) { return { semester: '2026年春季学期', homeTitle: '山水图窗', homeSubtitle: '' }; }
+  }
+  function localSave() {
+    const state = {
+      semester: document.getElementById('semesterInput').value,
+      homeTitle: document.getElementById('homeMainTitle').innerText,
+      homeSubtitle: document.getElementById('homeSubtitle').innerText
+    };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+  }
+  let localData = localLoad();
+  document.getElementById('semesterInput').value = localData.semester;
+  document.getElementById('homeMainTitle').innerText = localData.homeTitle;
+  document.getElementById('homeSubtitle').innerText = localData.homeSubtitle;
+
+  // 上传课程图片 -> Storage + 数据库
+  async function handleCourseImageUpload(input, section) {
+    const key = section === 'sectionRationale' ? 'rationale' : 'steps';
+    const files = Array.from(input.files).filter(f => f.type.startsWith('image/'));
+    for (const file of files) {
+      const ext = getFileExt(file);
+      const fileName = 'course/' + generateFileName('course', ext);
+      const { error } = await supabaseClient.storage.from(STORAGE_BUCKET).upload(fileName, file);
+      if (error) {
+        console.error('课程图片上传失败:', error);
+        continue;
+      }
+      const publicUrl = getPublicUrl(fileName);
+      if (publicUrl) {
+        // 存入 course_images 表（section 列记录所属板块）
+        await supabaseClient.from('course_images').insert({ section: key, image_url: publicUrl });
+      }
+    }
+    await renderCourseImages();
+    input.value = '';
+  }
+
+  // 从数据库加载课程图片并渲染
+  async function renderCourseImages() {
+    const { data: dbImages, error } = await supabaseClient.from('course_images').select('*').order('id');
+    if (error) {
+      console.error('加载课程图片失败:', error);
+      return;
+    }
+    // 按 section 分组
+    const rationaleImages = (dbImages || []).filter(img => img.section === 'rationale');
+    const stepsImages = (dbImages || []).filter(img => img.section === 'steps');
+
+    // 渲染到对应区域
+    ['rationale', 'steps'].forEach(key => {
+      const container = document.getElementById(`section${key.charAt(0).toUpperCase() + key.slice(1)}Images`);
+      if (!container) return;
+      container.innerHTML = '';
+      const images = key === 'rationale' ? rationaleImages : stepsImages;
+      images.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'img-container';
+        div.innerHTML = `<img src="${item.image_url}" style="max-width:100%;" onerror="this.style.display='none'">
+          <div class="img-actions">
+            <button class="img-btn" onclick="deleteCourseImage(${item.id}, '${item.image_url.replace(/'/g, "\\'")}')">✕</button>
+          </div>`;
+        container.appendChild(div);
+      });
+    });
+  }
+
+  // 删除课程图片（从数据库和Storage中移除）
+  async function deleteCourseImage(id, imageUrl) {
+    if (!confirm('确定删除这张图片吗？')) return;
+    // 从 Storage 删除文件
+    try {
+      const urlObj = new URL(imageUrl);
+      const path = decodeURIComponent(urlObj.pathname.split('/').pop().split('?')[0]);
+      // 加上 course/ 前缀
+      await supabaseClient.storage.from(STORAGE_BUCKET).remove(['course/' + path]);
+    } catch(e) {
+      console.warn('删除Storage文件失败:', e);
+    }
+    // 从数据库删除记录
+    const { error } = await supabaseClient.from('course_images').delete().eq('id', id);
+    if (error) {
+      alert('删除失败: ' + error.message);
+      return;
+    }
+    await renderCourseImages();
+  }
+
+  // ==================== 初始化 ====================
+  document.addEventListener('DOMContentLoaded', async () => {
+    loadWorksFromSupabase();
+    await renderCourseImages();
+    document.getElementById('homeMainTitle').addEventListener('input', localSave);
+    document.getElementById('homeSubtitle').addEventListener('input', localSave);
+  });
+</script>
+</body>
+</html>
